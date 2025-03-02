@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>COSMIC DEFENDER - AI Space Shooter Game</title>
+  
+  <!-- Meta tags for social sharing -->
+  <meta property="og:title" content="COSMIC DEFENDER - AI Space Shooter Game">
+  <meta property="og:description" content="Defend Earth from alien invaders in this action-packed space shooter game!">
+  <meta property="og:image" content="https://via.placeholder.com/1200x630/000000/FFFFFF/?text=COSMIC+DEFENDER">
+  <meta property="og:url" content="https://yourdomain.com/cosmic-defender">
+  <meta name="twitter:card" content="summary_large_image">
+  
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #000;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      border: 2px solid #333;
+      box-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
+      image-rendering: -webkit-optimize-contrast; /* Improve rendering on webkit browsers */
+      image-rendering: crisp-edges; /* Improve rendering on Firefox */
+    }
+  </style>
+</head>
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/p5.js"></script>
+  
+  <!-- Supabase Client - Using specific version -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/dist/umd/supabase.js"></script>
+  <script>
+    // Make supabaseJs globally available
+    window.supabaseJs = supabase;
+    console.log("Supabase library loaded:", typeof supabase);
+  </script>
+  
+  <script src="sketch.js"></script>
+</body>
+</html>
