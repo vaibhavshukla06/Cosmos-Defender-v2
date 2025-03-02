@@ -2745,14 +2745,6 @@ class Player {
           return;
         }
         
-        // Check if Supabase is initialized
-        if (!supabase) {
-          console.error("Supabase client is not initialized");
-          this.submissionStatus = "error";
-          this.isSubmittingScore = false;
-          return;
-        }
-        
         // Validate email
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(this.playerEmail)) {
@@ -2764,77 +2756,29 @@ class Player {
         this.isSubmittingScore = true;
         console.log("Submitting score:", this.score, "for email:", this.playerEmail);
         
-        // First, check if the user already has a score
-        const { data: existingData, error: existingError } = await supabase
-          .from('leaderboard')
-          .select('score')
-          .eq('email', this.playerEmail)
-          .single();
+        // Use Netlify function endpoint instead of direct Supabase call
+        const apiUrl = 'https://cosmic-defender.netlify.app/.netlify/functions/submitScore';
+        console.log("Submitting score to:", apiUrl);
         
-        if (existingError && existingError.code !== 'PGRST116') {
-          // An error occurred that wasn't "no rows returned"
-          console.error("Error checking existing score:", existingError);
-          this.submissionStatus = "error";
-          this.isSubmittingScore = false;
-          return;
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: this.playerEmail,
+            score: this.score,
+            game_version: '1.0'
+          })
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
         }
         
-        let result;
+        const result = await response.json();
         
-        // If user already has a score, only update if new score is higher
-        if (existingData) {
-          console.log("User already has score:", existingData.score);
-          
-          if (this.score > existingData.score) {
-            console.log("New score is higher, updating record");
-            result = await supabase
-              .from('leaderboard')
-              .update({ 
-                score: this.score,
-                game_version: '1.0',
-                created_at: new Date().toISOString() 
-              })
-              .eq('email', this.playerEmail);
-          } else {
-            console.log("New score is not higher, keeping existing record");
-            this.submissionStatus = "unchanged";
-            this.isSubmittingScore = false;
-            
-            // Still fetch updated leaderboard and show it
-            await this.fetchLeaderboard();
-            this.showLeaderboard();
-            return;
-          }
-        } else {
-          // User doesn't have a score yet, insert new record
-          console.log("User doesn't have a score yet, inserting new record");
-          result = await supabase
-            .from('leaderboard')
-            .insert([
-              { 
-                email: this.playerEmail,
-                score: this.score,
-                game_version: '1.0',
-                created_at: new Date().toISOString()
-              }
-            ]);
-        }
-        
-        const { error } = result;
-          
-        if (error) {
-          console.error("Error submitting score:", error);
-          this.submissionStatus = "error";
-          
-          // Check for specific error types
-          if (error.code === "23505") {
-            console.log("Duplicate entry - user already has a score");
-          } else if (error.code.startsWith("42")) {
-            console.log("Database error - check table structure");
-          } else if (error.code.startsWith("28")) {
-            console.log("Permission error - check RLS policies");
-          }
-        } else {
+        if (result.success) {
           console.log("Score submitted successfully");
           this.submissionStatus = "success";
           
@@ -2843,6 +2787,16 @@ class Player {
           
           // Show leaderboard after successful submission
           this.showLeaderboard();
+        } else if (result.unchanged) {
+          console.log("Score unchanged (not higher than previous)");
+          this.submissionStatus = "unchanged";
+          
+          // Still fetch updated leaderboard and show it
+          await this.fetchLeaderboard();
+          this.showLeaderboard();
+        } else {
+          console.error("Error submitting score:", result.error);
+          this.submissionStatus = "error";
         }
         
         this.isSubmittingScore = false;
@@ -3221,79 +3175,31 @@ class Player {
           return;
         }
         
-        // Check if Supabase is initialized
-        if (!supabase) {
-          console.error("Supabase client is not initialized");
-          this.leaderboardData = [];
-          this.leaderboardError = true;
-          this.leaderboardErrorMessage = "Database connection not initialized";
-          return;
-        }
-        
         // Show loading state
         this.leaderboardData = [];
         this.leaderboardError = false;
         this.leaderboardErrorMessage = "Loading leaderboard data...";
         
-        console.log("Attempting to fetch from Supabase URL:", SUPABASE_URL);
+        // Use Netlify function endpoint instead of direct Supabase call
+        const apiUrl = 'https://cosmic-defender.netlify.app/.netlify/functions/getLeaderboard';
+        console.log("Fetching leaderboard from:", apiUrl);
         
-        // Fetch top 10 scores from Supabase with timestamp
-        const { data, error } = await supabase
-          .from('leaderboard')
-          .select('email, score, created_at')
-          .order('score', { ascending: false })
-          .limit(10);
-          
-        if (error) {
-          console.error("Error fetching leaderboard:", error);
-          // Set a flag to show error message in the UI
-          this.leaderboardError = true;
-          this.leaderboardErrorMessage = "Could not load leaderboard data";
-          
-          // Check for specific error types
-          if (error.code === "PGRST116") {
-            console.log("Table might not exist - check your database schema");
-            this.leaderboardErrorMessage = "Leaderboard table not found";
-          } else if (error.code === "PGRST301") {
-            console.log("Permission error - check RLS policies");
-            this.leaderboardErrorMessage = "Permission denied to access leaderboard";
-          } else if (error.message && error.message.includes("Failed to fetch")) {
-            console.log("Network error - check your connection");
-            this.leaderboardErrorMessage = "Network error - check console";
-          }
-          
-          // Create mock data for testing or when offline
-          if (location.hostname === "localhost" || location.hostname === "127.0.0.1" || 
-              (error.message && (error.message.includes("Failed to fetch") || error.message.includes("NetworkError")))) {
-            console.log("Creating mock leaderboard data");
-            this.leaderboardData = [
-              { email: "player1@example.com", score: 5000, created_at: new Date().toISOString() },
-              { email: "player2@example.com", score: 4500, created_at: new Date().toISOString() },
-              { email: "player3@example.com", score: 4000, created_at: new Date().toISOString() },
-              { email: "player4@example.com", score: 3800, created_at: new Date().toISOString() },
-              { email: "player5@example.com", score: 3600, created_at: new Date().toISOString() },
-              { email: this.playerEmail || "you@example.com", score: 3500, created_at: new Date().toISOString() },
-              { email: "player6@example.com", score: 3200, created_at: new Date().toISOString() },
-              { email: "player7@example.com", score: 2800, created_at: new Date().toISOString() },
-              { email: "player8@example.com", score: 2500, created_at: new Date().toISOString() },
-              { email: "player9@example.com", score: 2000, created_at: new Date().toISOString() }
-            ];
-            this.leaderboardError = false;
-            
-            // Add a note that this is mock data
-            this.leaderboardErrorMessage = "Using offline data (demo mode)";
-          }
-        } else {
-          console.log("Leaderboard data:", data);
-          this.leaderboardData = data || [];
+        const response = await fetch(apiUrl);
+        
+        if (!response.ok) {
+          throw new Error(`API returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data) {
+          console.log("Leaderboard data received:", data.length, "entries");
+          this.leaderboardData = data;
           this.leaderboardError = false;
-          this.leaderboardErrorMessage = "";
-          
-          // If no data was returned but no error occurred
-          if (!data || data.length === 0) {
-            console.log("No leaderboard entries found");
-            this.leaderboardErrorMessage = "No leaderboard entries yet. Be the first!";
-          }
+        } else {
+          console.error("No data received from leaderboard API");
+          this.leaderboardError = true;
+          this.leaderboardErrorMessage = "No data received from server";
         }
       } catch (error) {
         console.error("Error in fetchLeaderboard:", error);
