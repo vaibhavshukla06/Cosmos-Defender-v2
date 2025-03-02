@@ -27,3 +27,5 @@ yarn-error.log*
 *.tmp
 *.swp
 *~
+# Local Netlify folder
+.netlify
