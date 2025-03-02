@@ -22,6 +22,7 @@
       height: 100vh;
       background-color: #000;
       overflow: hidden;
+      flex-direction: column;
     }
     canvas {
       display: block;
@@ -29,6 +30,14 @@
       box-shadow: 0 0 20px rgba(0, 200, 255, 0.5);
       image-rendering: -webkit-optimize-contrast; /* Improve rendering on webkit browsers */
       image-rendering: crisp-edges; /* Improve rendering on Firefox */
+    }
+    .github-notice {
+      color: #0088cc;
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      margin-top: 10px;
+      text-align: center;
+      max-width: 800px;
     }
   </style>
 </head>
@@ -44,5 +53,10 @@
   </script>
   
   <script src="sketch.js"></script>
+  
+  <div class="github-notice">
+    Note: When playing on GitHub Pages, the leaderboard operates in demo mode with sample data.
+    For the full experience with a real leaderboard, please see the instructions in the README.
+  </div>
 </body>
 </html>

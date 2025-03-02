@@ -5,6 +5,10 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let supabase;
 // Variable to track real-time subscription
 let leaderboardSubscription = null;
+// Flag to track if we're running on GitHub Pages
+const isGitHubPages = window.location.hostname.includes('github.io');
+// Flag to use offline mode when Supabase is unavailable
+let useOfflineMode = isGitHubPages; // Default to offline mode on GitHub Pages
 
 // Add these helper functions at the top of the file, after the global variables
 function drawRetroText(text, x, y, size, mainColor, outlineColor, shadowColor) {
@@ -62,25 +66,40 @@ function setup() {
   // Initialize Supabase client
   try {
     console.log("Attempting to initialize Supabase with URL:", SUPABASE_URL);
+    
+    // Check if we're on GitHub Pages
+    if (isGitHubPages) {
+      console.log("Running on GitHub Pages - using offline mode for leaderboard");
+      useOfflineMode = true;
+    }
+    
+    // Initialize Supabase client
     supabase = supabaseJs.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log("Supabase initialized successfully");
     
-    // Test connection
-    supabase.from('leaderboard').select('count').limit(1)
-      .then(response => {
-        if (response.error) {
-          console.error("Supabase connection test failed:", response.error);
-        } else {
-          console.log("Supabase connection test successful:", response);
-          // Set up real-time subscription for leaderboard updates
-          setupRealtimeSubscription();
-        }
-      })
-      .catch(error => {
-        console.error("Supabase connection test error:", error);
-      });
+    // Test connection only if not in offline mode
+    if (!useOfflineMode) {
+      supabase.from('leaderboard').select('count').limit(1)
+        .then(response => {
+          if (response.error) {
+            console.error("Supabase connection test failed:", response.error);
+            useOfflineMode = true;
+            console.log("Switching to offline mode for leaderboard");
+          } else {
+            console.log("Supabase connection test successful:", response);
+            // Set up real-time subscription for leaderboard updates
+            setupRealtimeSubscription();
+          }
+        })
+        .catch(error => {
+          console.error("Supabase connection test error:", error);
+          useOfflineMode = true;
+          console.log("Switching to offline mode for leaderboard due to error");
+        });
+    }
   } catch (error) {
     console.error("Error initializing Supabase:", error);
+    useOfflineMode = true;
   }
   
   game = new Game();
@@ -2701,6 +2720,31 @@ class Player {
       try {
         console.log("Attempting to submit score...");
         
+        // If in offline mode, just show success message without actually submitting
+        if (useOfflineMode) {
+          console.log("In offline mode - simulating score submission");
+          this.submissionStatus = "success";
+          
+          // Add player score to mock leaderboard data
+          this.leaderboardData.push({
+            email: this.playerEmail,
+            score: this.score,
+            created_at: new Date().toISOString()
+          });
+          
+          // Sort the leaderboard data by score (descending)
+          this.leaderboardData.sort((a, b) => b.score - a.score);
+          
+          // Limit to top 10
+          if (this.leaderboardData.length > 10) {
+            this.leaderboardData = this.leaderboardData.slice(0, 10);
+          }
+          
+          // Show leaderboard after "successful" submission
+          this.showLeaderboard();
+          return;
+        }
+        
         // Check if Supabase is initialized
         if (!supabase) {
           console.error("Supabase client is not initialized");
@@ -3046,11 +3090,17 @@ class Player {
         }
         
         // Show message if using mock data
-        if (this.leaderboardErrorMessage && this.leaderboardErrorMessage.includes("offline")) {
+        if (this.leaderboardErrorMessage && (this.leaderboardErrorMessage.includes("offline") || this.leaderboardErrorMessage.includes("demo"))) {
           fill(255, 200, 0);
           textAlign(CENTER);
           textSize(14);
           text(this.leaderboardErrorMessage, width/2, height * 0.8);
+          
+          if (useOfflineMode) {
+            textSize(12);
+            fill(200, 200, 200);
+            text("GitHub Pages version - Leaderboard is in demo mode", width/2, height * 0.83);
+          }
         }
       }
       
@@ -3150,6 +3200,26 @@ class Player {
     async fetchLeaderboard() {
       try {
         console.log("Fetching leaderboard data...");
+        
+        // Check if we're in offline mode
+        if (useOfflineMode) {
+          console.log("Using offline mode for leaderboard");
+          this.leaderboardData = [
+            { email: "player1@example.com", score: 5000, created_at: new Date().toISOString() },
+            { email: "player2@example.com", score: 4500, created_at: new Date().toISOString() },
+            { email: "player3@example.com", score: 4000, created_at: new Date().toISOString() },
+            { email: "player4@example.com", score: 3800, created_at: new Date().toISOString() },
+            { email: "player5@example.com", score: 3600, created_at: new Date().toISOString() },
+            { email: this.playerEmail || "you@example.com", score: 3500, created_at: new Date().toISOString() },
+            { email: "player6@example.com", score: 3200, created_at: new Date().toISOString() },
+            { email: "player7@example.com", score: 2800, created_at: new Date().toISOString() },
+            { email: "player8@example.com", score: 2500, created_at: new Date().toISOString() },
+            { email: "player9@example.com", score: 2000, created_at: new Date().toISOString() }
+          ];
+          this.leaderboardError = false;
+          this.leaderboardErrorMessage = "Using demo data (GitHub Pages version)";
+          return;
+        }
         
         // Check if Supabase is initialized
         if (!supabase) {
