@@ -8,7 +8,7 @@ let leaderboardSubscription = null;
 // Flag to track if we're running on GitHub Pages
 const isGitHubPages = window.location.hostname.includes('github.io');
 // Flag to use offline mode when Supabase is unavailable
-let useOfflineMode = isGitHubPages; // Default to offline mode on GitHub Pages
+let useOfflineMode = false; // Changed to false by default to use Netlify functions
 
 // Add these helper functions at the top of the file, after the global variables
 function drawRetroText(text, x, y, size, mainColor, outlineColor, shadowColor) {
@@ -2804,6 +2804,14 @@ class Player {
         console.error("Error in submitScore:", error);
         this.isSubmittingScore = false;
         this.submissionStatus = "error";
+        
+        // Log more details about the error
+        console.log("Error details:");
+        console.log("- Message:", error.message);
+        console.log("- API URL:", 'https://cosmic-defender.netlify.app/.netlify/functions/submitScore');
+        console.log("- Host:", window.location.hostname);
+        console.log("- Score:", this.score);
+        console.log("- Email:", this.playerEmail);
       }
     }
     
@@ -3204,7 +3212,13 @@ class Player {
       } catch (error) {
         console.error("Error in fetchLeaderboard:", error);
         this.leaderboardError = true;
-        this.leaderboardErrorMessage = "Error loading leaderboard";
+        this.leaderboardErrorMessage = "Error loading leaderboard: " + error.message;
+        
+        // Log more details about the error
+        console.log("Error details:");
+        console.log("- Message:", error.message);
+        console.log("- API URL:", 'https://cosmic-defender.netlify.app/.netlify/functions/getLeaderboard');
+        console.log("- Host:", window.location.hostname);
         
         // Create mock data for testing or when offline
         if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
