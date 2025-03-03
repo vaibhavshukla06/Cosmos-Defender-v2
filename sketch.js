@@ -3058,11 +3058,7 @@ class Player {
           textSize(14);
           text(this.leaderboardErrorMessage, width/2, height * 0.8);
           
-          if (useOfflineMode) {
-            textSize(12);
-            fill(200, 200, 200);
-            text("GitHub Pages version - Leaderboard is in demo mode", width/2, height * 0.83);
-          }
+          // GitHub Pages message removed as requested
         }
       }
       
@@ -3179,7 +3175,7 @@ class Player {
             { email: "player9@example.com", score: 2000, created_at: new Date().toISOString() }
           ];
           this.leaderboardError = false;
-          this.leaderboardErrorMessage = "Using demo data (GitHub Pages version)";
+          this.leaderboardErrorMessage = "Using sample leaderboard data";
           return;
         }
         
@@ -3230,7 +3226,7 @@ class Player {
             { email: this.playerEmail || "you@example.com", score: 3500, created_at: new Date().toISOString() }
           ];
           this.leaderboardError = false;
-          this.leaderboardErrorMessage = "Using offline data (demo mode)";
+          this.leaderboardErrorMessage = "Using sample leaderboard data";
         }
       }
     }
