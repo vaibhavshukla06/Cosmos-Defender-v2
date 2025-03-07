@@ -4,7 +4,7 @@ A fast-paced space shooter game with powerups, shields, and a global leaderboard
 
 ## Play the Game
 
-You can play the game online at: [Cosmic Defender](https://YOUR_GITHUB_USERNAME.github.io/cosmic-defender/)
+You can play the game online at: [Cosmic Defender](https://cosmic-defender.netlify.app/)
 
 ## Game Features
 
